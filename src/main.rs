@@ -163,6 +163,8 @@ async fn main(_spawner: Spawner) {
     let mut data = [RGB8::default(); 1];
 
     info!("Debounce Demo");
+    data[0] = (0,0,0).into();
+    ws2812.write(&data).await;
 
     loop {
 	data[0] = (0,0,255).into();
