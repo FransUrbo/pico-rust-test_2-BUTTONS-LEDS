@@ -16,8 +16,6 @@ use embassy_time::{with_deadline, Duration, Instant, Timer};
 pub mod ws2812;
 use crate::ws2812::Ws2812;
 
-use smart_leds::RGB8;
-
 use {defmt_rtt as _, panic_probe as _};
 
 // ================================================================================
@@ -59,23 +57,25 @@ async fn main(_spawner: Spawner) {
     info!("Start");
 
     let p = embassy_rp::init(Default::default());
-    let mut btn = Debouncer::new(Input::new(p.PIN_5, Pull::Up), Duration::from_millis(20));
+
+    // Initialize the button pin.
+    let mut btn = Debouncer::new(Input::new(p.PIN_5, Pull::Up), Duration::from_millis(10));
+
+    // Initialize the NeoPixel LED.
     let Pio { mut common, sm0, .. } = Pio::new(p.PIO0, Irqs);
     let mut ws2812 = Ws2812::new(&mut common, sm0, p.DMA_CH0, p.PIN_15);
 
+    // Turn off all LEDs
     let mut led1 = Output::new(p.PIN_6, Level::Low); // BLUE	<1s
     let mut led2 = Output::new(p.PIN_7, Level::Low); // GREEN	>1s
     let mut led3 = Output::new(p.PIN_8, Level::Low); // ORANGE	<5s
     let mut led4 = Output::new(p.PIN_9, Level::Low); // RED	>5s
-    let mut data = [RGB8::default(); 1];
+    ws2812.write(&[(0,0,0).into()]).await;
+    Timer::after_secs(2).await;
 
     info!("Debounce Demo");
-    data[0] = (0,0,0).into();
-    ws2812.write(&data).await;
-
     loop {
-	data[0] = (0,0,255).into();
-	ws2812.write(&data).await;
+	ws2812.write(&[(0,0,255).into()]).await;
 
         // button pressed
         btn.debounce().await;
@@ -130,8 +130,7 @@ async fn main(_spawner: Spawner) {
         btn.debounce().await;
         info!("Button pressed for: {}ms", start.elapsed().as_millis());
 
-	data[0] = (0,0,0).into();
-	ws2812.write(&data).await;
+	ws2812.write(&[(0,0,0).into()]).await;
 	Timer::after_secs(1).await;
     }
 }
