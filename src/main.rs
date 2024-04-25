@@ -8,47 +8,22 @@ use defmt::info;
 
 use embassy_executor::Spawner;
 use embassy_rp::gpio::{Level, Input, Output, Pull};
+use embassy_time::{with_deadline, Duration, Instant, Timer};
 use embassy_rp::bind_interrupts;
 use embassy_rp::peripherals::PIO0;
 use embassy_rp::pio::{InterruptHandler, Pio};
-use embassy_time::{with_deadline, Duration, Instant, Timer};
 
 pub mod ws2812;
 use crate::ws2812::Ws2812;
 
-use {defmt_rtt as _, panic_probe as _};
+pub mod debounce;
+use crate::debounce::Debouncer;
 
-// ================================================================================
+use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => InterruptHandler<PIO0>;
 });
-
-pub struct Debouncer<'a> {
-    input: Input<'a>,
-    debounce: Duration,
-}
-
-impl<'a> Debouncer<'a> {
-    pub fn new(input: Input<'a>, debounce: Duration) -> Self {
-        Self { input, debounce }
-    }
-
-    pub async fn debounce(&mut self) -> Level {
-        loop {
-            let l1 = self.input.get_level();
-
-            self.input.wait_for_any_edge().await;
-
-            Timer::after(self.debounce).await;
-
-            let l2 = self.input.get_level();
-            if l1 != l2 {
-                break l2;
-            }
-        }
-    }
-}
 
 // ================================================================================
 
