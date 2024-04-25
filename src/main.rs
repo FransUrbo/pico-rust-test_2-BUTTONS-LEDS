@@ -7,7 +7,7 @@
 use defmt::info;
 
 use embassy_executor::Spawner;
-use embassy_rp::gpio::{Level, Input, Output, Pull};
+use embassy_rp::gpio::{AnyPin, Level, Input, Output, Pin, Pull};
 use embassy_time::{with_deadline, Duration, Instant, Timer};
 use embassy_rp::bind_interrupts;
 use embassy_rp::peripherals::PIO0;
@@ -27,31 +27,12 @@ bind_interrupts!(struct Irqs {
 
 // ================================================================================
 
-#[embassy_executor::main]
-async fn main(_spawner: Spawner) {
-    info!("Start");
+#[embassy_executor::task(pool_size = 4)]
+async fn read_button(btn_pin: AnyPin, led_pin: AnyPin) {
+    let mut btn = Debouncer::new(Input::new(btn_pin, Pull::Up), Duration::from_millis(20));
+    let mut led = Output::new(led_pin, Level::Low);
 
-    let p = embassy_rp::init(Default::default());
-
-    // Initialize the button pin.
-    let mut btn = Debouncer::new(Input::new(p.PIN_5, Pull::Up), Duration::from_millis(10));
-
-    // Initialize the NeoPixel LED.
-    let Pio { mut common, sm0, .. } = Pio::new(p.PIO0, Irqs);
-    let mut ws2812 = Ws2812::new(&mut common, sm0, p.DMA_CH0, p.PIN_15);
-
-    // Turn off all LEDs
-    let mut led1 = Output::new(p.PIN_6, Level::Low); // BLUE	<1s
-    let mut led2 = Output::new(p.PIN_7, Level::Low); // GREEN	>1s
-    let mut led3 = Output::new(p.PIN_8, Level::Low); // ORANGE	<5s
-    let mut led4 = Output::new(p.PIN_9, Level::Low); // RED	>5s
-    ws2812.write(&[(0,0,0).into()]).await;
-    Timer::after_secs(2).await;
-
-    info!("Debounce Demo");
     loop {
-	ws2812.write(&[(0,0,255).into()]).await;
-
         // button pressed
         btn.debounce().await;
         let start = Instant::now();
@@ -62,20 +43,18 @@ async fn main(_spawner: Spawner) {
             Ok(_) => {
                 info!("Button pressed for: {}ms", start.elapsed().as_millis());
 
-		// BLUE
-		led1.set_high();
-		Timer::after_secs(1).await;
-		led1.set_low();
+		led.set_high();
+		Timer::after_millis(500).await;
+		led.set_low();
                 continue;
             }
             // button held for > 1s
             Err(_) => {
                 info!("Button Held");
 
-		// GREEN
-		led2.set_high();
-		Timer::after_secs(1).await;
-		led2.set_low();
+		led.set_high();
+		Timer::after_millis(500).await;
+		led.set_low();
             }
         }
 
@@ -84,27 +63,52 @@ async fn main(_spawner: Spawner) {
             Ok(_) => {
                 info!("Button pressed for: {}ms", start.elapsed().as_millis());
 
-		// ORANGE
-		led3.set_high();
-		Timer::after_secs(1).await;
-		led3.set_low();
+		led.set_high();
+		Timer::after_millis(500).await;
+		led.set_low();
                 continue;
             }
             // button held for > >5s
             Err(_) => {
                 info!("Button Long Held");
 
-		// RED
-		led4.set_high();
-		Timer::after_secs(1).await;
-		led4.set_low();
+		led.set_high();
+		Timer::after_millis(500).await;
+		led.set_low();
             }
         }
 
         // wait for button release before handling another press
         btn.debounce().await;
         info!("Button pressed for: {}ms", start.elapsed().as_millis());
+    }
+}
 
+#[embassy_executor::main]
+async fn main(spawner: Spawner) {
+    info!("Start");
+
+    let p = embassy_rp::init(Default::default());
+
+    // =====
+    // Initialize the NeoPixel LED.
+    let Pio { mut common, sm0, .. } = Pio::new(p.PIO0, Irqs);
+    let mut ws2812 = Ws2812::new(&mut common, sm0, p.DMA_CH0, p.PIN_15);
+
+    // Spawn off one button reader per button.
+    spawner.spawn(read_button(p.PIN_2.degrade(), p.PIN_6.degrade())).unwrap();
+    spawner.spawn(read_button(p.PIN_3.degrade(), p.PIN_7.degrade())).unwrap();
+    spawner.spawn(read_button(p.PIN_4.degrade(), p.PIN_8.degrade())).unwrap();
+    spawner.spawn(read_button(p.PIN_5.degrade(), p.PIN_9.degrade())).unwrap();
+
+    // =====
+    info!("Debounce Demo");
+    loop {
+	// Set the NeoPixel BLUE.
+	ws2812.write(&[(0,0,255).into()]).await;
+	Timer::after_secs(1).await;
+
+	// Turn off the NeoPixel
 	ws2812.write(&[(0,0,0).into()]).await;
 	Timer::after_secs(1).await;
     }
