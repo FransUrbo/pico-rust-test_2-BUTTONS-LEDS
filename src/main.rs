@@ -8,7 +8,7 @@ use defmt::info;
 
 use embassy_executor::Spawner;
 use embassy_rp::gpio::{AnyPin, Level, Input, Output, Pin, Pull};
-use embassy_time::{Duration, Instant, Timer};
+use embassy_time::{with_deadline, Duration, Instant, Timer};
 use embassy_rp::bind_interrupts;
 use embassy_rp::peripherals::PIO0;
 use embassy_rp::pio::{InterruptHandler, Pio};
@@ -77,9 +77,9 @@ async fn read_button(
 
 	// Don't really care how long a button have been pressed as,
 	// the `debounce()` will detect when it's been RELEASED.
-        match btn.debounce().await {
-            _ => {
-                info!("Button pressed for: {}ms", start.elapsed().as_millis());
+	match with_deadline(start + Duration::from_secs(1), btn.debounce()).await {
+            Ok(_) => {
+		info!("Button pressed for: {}ms", start.elapsed().as_millis());
 
 		// We know who WE are, so turn ON our own LED and turn off all the other LEDs.
 		// Turn on our OWN LED.
@@ -89,32 +89,41 @@ async fn read_button(
 			CHANNEL_N.send(LedStatus::Off).await;
 			CHANNEL_R.send(LedStatus::Off).await;
 			CHANNEL_D.send(LedStatus::Off).await;
+
+			continue;
 		    }
 		    Button::N  => {
 			CHANNEL_P.send(LedStatus::Off).await;
 			CHANNEL_N.send(LedStatus::On).await;
 			CHANNEL_R.send(LedStatus::Off).await;
 			CHANNEL_D.send(LedStatus::Off).await;
+
+			continue;
 		    }
 		    Button::R  => {
 			CHANNEL_P.send(LedStatus::Off).await;
 			CHANNEL_N.send(LedStatus::Off).await;
 			CHANNEL_R.send(LedStatus::On).await;
 			CHANNEL_D.send(LedStatus::Off).await;
+
+			continue;
 		    }
 		    Button::D  => {
 			CHANNEL_P.send(LedStatus::Off).await;
 			CHANNEL_N.send(LedStatus::Off).await;
 			CHANNEL_R.send(LedStatus::Off).await;
 			CHANNEL_D.send(LedStatus::On).await;
+
+			continue;
 		    }
 		}
-
-		// wait for button release before handling another press
-		btn.debounce().await;
-		info!("Button pressed for: {}ms", start.elapsed().as_millis());
             }
-        }
+	    Err(_) => info!("Button Long Held")
+	}
+
+	// wait for button release before handling another press
+	btn.debounce().await;
+	info!("Button pressed for: {}ms", start.elapsed().as_millis());
     }
 }
 
