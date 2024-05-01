@@ -96,10 +96,10 @@ async fn main(spawner: Spawner) {
     let mut ws2812 = Ws2812::new(&mut common, sm0, p.DMA_CH0, p.PIN_15);
 
     // Spawn off one button reader per button.
-    spawner.spawn(read_button(p.PIN_2.degrade(), p.PIN_6.degrade())).unwrap();
-    spawner.spawn(read_button(p.PIN_3.degrade(), p.PIN_7.degrade())).unwrap();
-    spawner.spawn(read_button(p.PIN_4.degrade(), p.PIN_8.degrade())).unwrap();
-    spawner.spawn(read_button(p.PIN_5.degrade(), p.PIN_9.degrade())).unwrap();
+    spawner.spawn(read_button(p.PIN_2.degrade(), p.PIN_6.degrade())).unwrap(); // P
+    spawner.spawn(read_button(p.PIN_3.degrade(), p.PIN_7.degrade())).unwrap(); // N
+    spawner.spawn(read_button(p.PIN_4.degrade(), p.PIN_8.degrade())).unwrap(); // R
+    spawner.spawn(read_button(p.PIN_5.degrade(), p.PIN_9.degrade())).unwrap(); // D
 
     // =====
     info!("Debounce Demo");
