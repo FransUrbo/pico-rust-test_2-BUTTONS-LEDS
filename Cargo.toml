@@ -52,5 +52,10 @@ git = "https://github.com/embassy-rs/embassy.git"
 rev = "511bee7"
 features = ["defmt", "unstable-pac", "time-driver", "critical-section-impl"]
 
+[dependencies.embassy-sync]
+git = "https://github.com/embassy-rs/embassy.git"
+rev = "511bee7"
+features = ["defmt"]
+
 [profile.release]
 debug = 2
