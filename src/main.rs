@@ -13,11 +13,8 @@ use embassy_rp::bind_interrupts;
 use embassy_rp::peripherals::PIO0;
 use embassy_rp::pio::{InterruptHandler, Pio};
 
-pub mod ws2812;
-use crate::ws2812::Ws2812;
-
-pub mod debounce;
-use crate::debounce::Debouncer;
+use ws2312;
+use debounce;
 
 use {defmt_rtt as _, panic_probe as _};
 
@@ -29,7 +26,7 @@ bind_interrupts!(struct Irqs {
 
 #[embassy_executor::task(pool_size = 4)]
 async fn read_button(btn_pin: AnyPin, led_pin: AnyPin) {
-    let mut btn = Debouncer::new(Input::new(btn_pin, Pull::Up), Duration::from_millis(20));
+    let mut btn = debounce::Debouncer::new(Input::new(btn_pin, Pull::Up), Duration::from_millis(20));
     let mut led = Output::new(led_pin, Level::Low);
 
     loop {
@@ -93,7 +90,7 @@ async fn main(spawner: Spawner) {
     // =====
     // Initialize the NeoPixel LED.
     let Pio { mut common, sm0, .. } = Pio::new(p.PIO0, Irqs);
-    let mut ws2812 = Ws2812::new(&mut common, sm0, p.DMA_CH0, p.PIN_15);
+    let mut ws2812 = ws2312::Ws2812::new(&mut common, sm0, p.DMA_CH0, p.PIN_15);
 
     // Spawn off one button reader per button.
     spawner.spawn(read_button(p.PIN_2.degrade(), p.PIN_6.degrade())).unwrap(); // P

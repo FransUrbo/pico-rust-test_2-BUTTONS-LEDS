@@ -18,6 +18,15 @@ panic-probe = { version = "0.3", features = ["print-defmt"] }
 pio = "0.2.1"
 smart-leds = "0.3.0"
 
+[dependencies.ws2312]
+git = "https://github.com/FransUrbo/rust-libs-ws2312.git"
+rev = "45cef0f"
+
+[dependencies.debounce]
+git = "https://github.com/FransUrbo/rust-libs-debounce.git"
+rev = "c7a6f80"
+version = "0.1.0"
+
 # They haven't released the `embassy_time::with_deadline` yet, so need to use the GIT version.
 [dependencies.embassy-embedded-hal]
 git = "https://github.com/embassy-rs/embassy.git"
