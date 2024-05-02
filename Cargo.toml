@@ -18,9 +18,9 @@ panic-probe = { version = "0.3", features = ["print-defmt"] }
 pio = "0.2.1"
 smart-leds = "0.3.0"
 
-[dependencies.ws2312]
-git = "https://github.com/FransUrbo/rust-libs-ws2312.git"
-rev = "45cef0f"
+[dependencies.ws2812]
+git = "https://github.com/FransUrbo/rust-libs-ws2812.git"
+rev = "712ed6e"
 
 [dependencies.debounce]
 git = "https://github.com/FransUrbo/rust-libs-debounce.git"

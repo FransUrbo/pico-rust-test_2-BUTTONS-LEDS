@@ -15,7 +15,7 @@ use embassy_rp::pio::{InterruptHandler, Pio};
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::{Channel, Receiver};
 
-use ws2312;
+use ws2812;
 use debounce;
 
 use {defmt_rtt as _, panic_probe as _};
@@ -136,7 +136,7 @@ async fn main(spawner: Spawner) {
     // =====
     // Initialize the NeoPixel LED.
     let Pio { mut common, sm0, .. } = Pio::new(p.PIO0, Irqs);
-    let mut ws2812 = ws2312::Ws2812::new(&mut common, sm0, p.DMA_CH0, p.PIN_15);
+    let mut ws2812 = ws2812::Ws2812::new(&mut common, sm0, p.DMA_CH0, p.PIN_15);
 
     // Spawn off one button reader per button.
     spawner.spawn(read_button(spawner, Button::P, p.PIN_2.degrade(), p.PIN_6.degrade())).unwrap(); // button/P
